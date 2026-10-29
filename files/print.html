@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>พิมพ์ใบกำกับภาษี</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif;
+      background: #eef1f5;
+      font-size: 13px;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ===== TOOLBAR ด้านบน (ซ่อนตอนสั่งพิมพ์) ===== */
+    .print-toolbar {
+      background: #1a73e8;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .print-toolbar h2 { font-size: 16px; flex: 1; font-weight: 600; }
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-white   { background: white; color: #1a73e8; }
+    .btn-white:hover { background: #e8f0fe; }
+    .btn-success { background: #34a853; color: white; }
+    .btn-success:hover { background: #2d8f46; }
+    .btn-outline { background: transparent; color: white; border: 1.5px solid white; }
+    .btn-outline:hover { background: rgba(255,255,255,0.15); }
+
+    /* ===== WRAPPER หน้ากระดาษ ===== */
+    .page-wrapper {
+      display: flex;
+      justify-content: center;
+      padding: 20px 10px 40px;
+    }
+
+    /* ===== หน้ารวมพิมพ์ขนาดพอดี A4 (กว้าง 764px พอดีกับฟอร์มต่อเนื่อง/กระดาษสำเร็จรูป) ===== */
+    .print-page {
+      background: white;
+      width: 764px;
+      min-height: 1080px;
+      padding: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      position: relative;
+      overflow: visible;
+    }
+
+    /* ตารางจัดตำแหน่งตามพิกเซลของแบบฟอร์ม (ขยับขึ้น 2mm เหลือ 13mm ทุกอัน) */
+    .layout-table {
+      width: 764px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+      color: #000;
+      position: relative;
+      top: 13mm; /* ปรับตัวอักษรและตารางขึ้น 2 mm (จาก 15mm เหลือ 13mm) */
+    }
+    .layout-table td {
+      padding: 0;
+      vertical-align: middle;
+      border: none; /* ไม่มีเส้นตาราง พิมพ์ลงบนกระดาษฟอร์มสำเร็จรูป */
+    }
+
+    /* กำหนดความกว้างของคอลัมน์ A ถึง J ตามขนาดพิกเซลของแบบฟอร์ม Excel (รวม 764px) */
+    .col-A { width: 55px; }   /* ลำดับ (Col A) */
+    .col-B { width: 65px; }   /* ชื่อสินค้า B */
+    .col-C { width: 65px; }   /* ชื่อสินค้า C */
+    .col-D { width: 160px; }  /* ชื่อสินค้า D / เลขผู้เสียภาษี */
+    .col-E { width: 50px; }   /* จำนวน (Col E) */
+    .col-F { width: 55px; }   /* หน่วยนับ (Col F) */
+    .col-G { width: 85px; }   /* ราคาต่อหน่วย (Col G) */
+    .col-H { width: 70px; }   /* ราคารวม H */
+    .col-I { width: 60px; }   /* ราคารวม I / รหัสลูกค้า */
+    .col-J { width: 99px; }   /* ระยะเว้นขอบขวา */
+
+    /* คลาสช่วยจัดตำแหน่งตัวอักษร */
+    .align-left   { text-align: left; padding-left: 2px !important; }
+    .align-center { text-align: center; }
+    .align-right  { text-align: right; padding-right: 4px !important; }
+
+    /* ปรับแต่งความสูงแต่ละแถวตามโครงสร้าง Excel (ขยายระยะห่างชื่อลูกค้า/ที่อยู่ +1mm) */
+    .r-header-space { height: 210px; } /* แถว 1-7: ระยะขอบบนหัวกระดาษสำเร็จรูป */
+    .r-cust-name    { height: 38px; font-weight: 700; font-size: 14px; } /* แถวชื่อลูกค้า (+1mm จากเดิม 34px) */
+    .r-address1     { height: 38px; font-size: 13px; } /* แถวที่อยู่ 1 และ วันที่/เวลา (+1mm จากเดิม 34px) */
+    .r-address2     { height: 35px; font-size: 13px; } /* แถวที่อยู่ 2 (+1mm จากเดิม 31px) */
+    .r-space-tax    { height: 0px; display: none; } /* ซ่อนแถวคั่น เพื่อขยับข้อมูลที่เหลือทั้งหมดขึ้น 1 cm (~38px) */
+    .r-tax-cust     { height: 34px; font-size: 13px; } /* แถวเลขภาษี, เลขที่เอกสาร, รหัสลูกค้า (ขยับขึ้น 1 cm) */
+    .r-table-header-space { height: 35px; } /* ระยะเว้นหัวตารางก่อนเข้ารายการสินค้า */
+
+    .item-row {
+      height: 28px;
+      font-size: 12.5px;
+    }
+
+    .r-totals-space { height: 16px; } /* ระยะเว้นคั่นก่อนสรุปยอด */
+    .r-subtotal     { height: 30px; font-size: 13px; } /* ราคารวมทั้งหมด (Subtotal) */
+    .r-vat          { height: 28px; font-size: 13px; } /* ภาษีมูลค่าเพิ่ม 7% (VAT) */
+    .r-grand-total  { height: 32px; font-size: 13px; font-weight: 600; } /* ราคารวมภาษีทั้งสิ้น & ภาษาเขียน */
+
+    /* ขยับเลขประจำตัวผู้เสียภาษีไปทางขวา 2 CM (20mm) */
+    #pTaxId {
+      transform: translateX(20mm);
+    }
+
+    /* ===== PRINT MEDIA (เฉพาะตอนสั่งพิมพ์ลงกระดาษจริง window.print()) ===== */
+    @media print {
+      .print-toolbar { display: none !important; }
+      body { background: white !important; }
+      .page-wrapper { padding: 0 !important; }
+      .print-page {
+        width: 100% !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        overflow: visible !important;
+      }
+      .layout-table {
+        position: relative;
+        top: 13mm; /* ปรับตัวอักษรและตารางขึ้น 2 mm (เหลือ 13mm) ตอนพิมพ์ */
+        left: 0;
+      }
+      #pTaxId {
+        transform: translateX(20mm);
+      }
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+    }
+  </style>
+
+  <!-- Script สำหรับดาวน์โหลด PDF โดยตรง -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- ข้อมูล Invoice จากเซิร์ฟเวอร์ -->
+  <script id="invoiceDataScript" type="application/json">
+    <?!= dataJson ? dataJson : '{}' ?>
+  </script>
+</head>
+<body>
+
+<!-- แถบเครื่องมือด้านบน -->
+<div class="print-toolbar" id="printToolbar">
+  <span style="font-size:22px;">🧾</span>
+  <h2>แบบฟอร์มพิมพ์ใบกำกับภาษี (ตรงตามบล็อคกระดาษพิมพ์จริง)</h2>
+  <button class="btn btn-outline" onclick="closePrintPage()">✕ ปิดแท็บนี้</button>
+  <button class="btn btn-outline" onclick="backToMainApp()">🏠 กลับหน้าหลัก</button>
+  <button class="btn btn-white btn-success" onclick="downloadPdfDirectly()">📥 บันทึกเป็น PDF ลงเครื่อง PC</button>
+  <button class="btn btn-white" onclick="window.print()">🖨️ สั่งพิมพ์ (Ctrl+P)</button>
+</div>
+
+<div class="page-wrapper">
+  <div class="print-page" id="invoicePage">
+
+    <table class="layout-table">
+      <!-- คอลัมน์ A ถึง J -->
+      <colgroup>
+        <col class="col-A">
+        <col class="col-B">
+        <col class="col-C">
+        <col class="col-D">
+        <col class="col-E">
+        <col class="col-F">
+        <col class="col-G">
+        <col class="col-H">
+        <col class="col-I">
+        <col class="col-J">
+      </colgroup>
+      <tbody>
+
+        <!-- แถว 1-7: ระยะขอบบน (Header Space) สูง 210 px สำหรับหัวกระดาษสำเร็จรูป -->
+        <tr class="r-header-space">
+          <td colspan="10"></td>
+        </tr>
+
+        <!-- แถวชื่อลูกค้า / บริษัท -->
+        <tr class="r-cust-name">
+          <td></td>
+          <td colspan="6" class="align-left" id="pCustName"></td>
+          <td colspan="3"></td>
+        </tr>
+
+        <!-- แถวที่อยู่ลูกค้า 1 และ วันที่/เวลา -->
+        <tr class="r-address1">
+          <td></td>
+          <td colspan="5" class="align-left" id="pAddress1"></td>
+          <td></td>
+          <td colspan="2" class="align-center" id="pDate"></td>
+          <td></td>
+        </tr>
+
+        <!-- แถวที่อยู่ลูกค้า 2 -->
+        <tr class="r-address2">
+          <td></td>
+          <td colspan="5" class="align-left" id="pAddress2"></td>
+          <td colspan="4"></td>
+        </tr>
+
+        <!-- ระยะเว้นคั่นก่อนเลขภาษี -->
+        <tr class="r-space-tax">
+          <td colspan="10"></td>
+        </tr>
+
+        <!-- แถวเลขประจำตัวผู้เสียภาษี, เลขที่เอกสาร และ รหัสลูกค้า -->
+        <tr class="r-tax-cust">
+          <td colspan="3"></td>
+          <td colspan="3" class="align-left" id="pTaxId" style="letter-spacing: 1px;"></td>
+          <td></td>
+          <td class="align-center" id="pInvNo" style="font-weight: 700;"></td>
+          <td class="align-center" id="pCustCode"></td>
+          <td></td>
+        </tr>
+
+        <!-- ระยะเว้นหัวตารางก่อนเข้ารายการสินค้า -->
+        <tr class="r-table-header-space">
+          <td colspan="10"></td>
+        </tr>
+
+        <!-- ตารางรายการสินค้า 13 รายการ -->
+        <!-- แถว 1 (Row 1) -->
+        <tr class="item-row" id="row_1"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 2 (Row 2) -->
+        <tr class="item-row" id="row_2"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 3 (Row 3) -->
+        <tr class="item-row" id="row_3"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 4 (Row 4) -->
+        <tr class="item-row" id="row_4"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 5 (Row 5) -->
+        <tr class="item-row" id="row_5"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 6 (Row 6) -->
+        <tr class="item-row" id="row_6"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 7 (Row 7) -->
+        <tr class="item-row" id="row_7"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 8 (Row 8) -->
+        <tr class="item-row" id="row_8"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 9 (Row 9) -->
+        <tr class="item-row" id="row_9"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 10 (Row 10) -->
+        <tr class="item-row" id="row_10"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 11 (Row 11) -->
+        <tr class="item-row" id="row_11"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 12 (Row 12) -->
+        <tr class="item-row" id="row_12"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+        <!-- แถว 13 (Row 13) -->
+        <tr class="item-row" id="row_13"><td class="align-center num"></td><td colspan="3" class="align-left name"></td><td class="align-center qty"></td><td class="align-center unit"></td><td class="align-right price"></td><td colspan="2" class="align-right amount"></td><td></td></tr>
+
+        <!-- ระยะเว้นคั่นก่อนสรุปยอด -->
+        <tr class="r-totals-space">
+          <td colspan="10"></td>
+        </tr>
+
+        <!-- ราคารวมทั้งหมด (Subtotal) -->
+        <tr class="r-subtotal">
+          <td colspan="7"></td>
+          <td colspan="2" class="align-right" id="pSubtotal"></td>
+          <td></td>
+        </tr>
+
+        <!-- ภาษีมูลค่าเพิ่ม 7% (VAT) -->
+        <tr class="r-vat">
+          <td colspan="7"></td>
+          <td colspan="2" class="align-right" id="pVat"></td>
+          <td></td>
+        </tr>
+
+        <!-- ราคารวมภาษีที่เป็นภาษาเขียน และ ราคารวมภาษีทั้งสิ้น (Grand Total) -->
+        <tr class="r-grand-total">
+          <td></td>
+          <td colspan="5" class="align-left" id="pBahtText" style="padding-left:10px !important;"></td>
+          <td></td>
+          <td colspan="2" class="align-right" id="pGrandTotal"></td>
+          <td></td>
+        </tr>
+
+      </tbody>
+    </table>
+
+  </div><!-- /print-page -->
+</div>
+
+<script>
+// ==========================================
+//  JavaScript — แปลงข้อมูลและจัดตำแหน่งพิมพ์
+// ==========================================
+
+function formatNum(n) {
+  if (n === null || n === undefined || n === '') return '';
+  return Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ฟังก์ชันแปลงตัวเลขเป็นตัวอักษรภาษาไทย (=BAHTTEXT ใน Google Sheets)
+function convertToThaiBaht(num) {
+  if (num === null || num === undefined || isNaN(num)) return '';
+  num = parseFloat(num).toFixed(2);
+  if (num === '0.00') return 'ศูนย์บาทถ้วน';
+
+  const numbers = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+  const digits  = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+
+  const parts = num.split('.');
+  const integerPart = parts[0];
+  const decimalPart = parts[1];
+
+  function convertSection(s) {
+    let res = '';
+    const len = s.length;
+    for (let i = 0; i < len; i++) {
+      const d = parseInt(s[i], 10);
+      const pos = len - i - 1;
+      if (d !== 0) {
+        if (pos === 0 && d === 1 && len > 1) {
+          res += 'เอ็ด';
+        } else if (pos === 1 && d === 1) {
+          res += 'สิบ';
+        } else if (pos === 1 && d === 2) {
+          res += 'ยี่สิบ';
+        } else {
+          res += numbers[d] + digits[pos];
+        }
+      }
+    }
+    return res;
+  }
+
+  let res = '';
+  const intLen = integerPart.length;
+  if (intLen > 6) {
+    const milPart = integerPart.substring(0, intLen - 6);
+    const lowPart = integerPart.substring(intLen - 6);
+    res = convertSection(milPart) + 'ล้าน' + convertSection(lowPart);
+  } else {
+    res = convertSection(integerPart);
+  }
+  res += 'บาท';
+
+  if (decimalPart === '00') {
+    res += 'ถ้วน';
+  } else {
+    let decRes = '';
+    const d1 = parseInt(decimalPart[0], 10);
+    const d2 = parseInt(decimalPart[1], 10);
+    if (d1 !== 0) {
+      if (d1 === 1) decRes += 'สิบ';
+      else if (d1 === 2) decRes += 'ยี่สิบ';
+      else decRes += numbers[d1] + 'สิบ';
+    }
+    if (d2 !== 0) {
+      if (d2 === 1 && d1 !== 0) decRes += 'เอ็ด';
+      else decRes += numbers[d2];
+    }
+    res += decRes + 'สตางค์';
+  }
+  return res;
+}
+
+// จัดรูปแบบวันที่ เช่น 5/09/2026 ตามตัวอย่างของผู้ใช้
+function formatDocDate(dStr) {
+  if (!dStr) return '';
+  const parts = String(dStr).split('-');
+  if (parts.length === 3) {
+    const y = parts[0], m = parts[1], d = parts[2];
+    return `${parseInt(d, 10)}/${m}/${y}`;
+  }
+  return String(dStr);
+}
+
+window.onload = function() {
+  let data = {};
+
+  // 1. อ่านข้อมูลจาก JSON script tag
+  try {
+    const scriptEl = document.getElementById('invoiceDataScript');
+    if (scriptEl && scriptEl.textContent.trim()) {
+      data = JSON.parse(scriptEl.textContent.trim());
+    }
+  } catch(e) {
+    console.warn('Parse script tag error:', e);
+  }
+
+  // 2. ถ้าไม่มี ให้อ่านจาก URL
+  if (!data || !data.customerName) {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const raw = urlParams.get('data');
+      if (raw) data = JSON.parse(decodeURIComponent(raw));
+    } catch(e2) {
+      console.warn('Parse URL error:', e2);
+    }
+  }
+
+  // ★ ตรวจสอบว่ามีข้อมูลจริงไหม ถ้าไม่มีให้แจ้งเตือนแทนปล่อยหน้าขาว
+  if (!data || !data.customerName) {
+    document.getElementById('invoicePage').innerHTML =
+      '<div style="padding:60px 24px;text-align:center;font-size:18px;color:#c00;line-height:1.8;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin:40px auto;max-width:600px;">' +
+      '⚠️ <strong>ไม่พบข้อมูลใบกำกับภาษี</strong><br><br>' +
+      'กรุณาเปิดหน้านี้ผ่านปุ่ม <strong>"บันทึก & พิมพ์ / ดาวน์โหลด PDF"</strong> จากหน้าเว็บแอปหลักเท่านั้น<br>' +
+      '<span style="font-size:14px;color:#666;">(ไม่สามารถเปิดไฟล์นี้โดยตรงได้ เพราะต้องรับข้อมูลที่ส่งมาจากระบบ)</span>' +
+      '</div>';
+    return; // หยุดทำงาน ไม่ต้องพิมพ์หรือประมวลผลต่อ
+  }
+
+  // หยอดข้อมูลลูกค้าและเอกสาร
+  document.getElementById('pCustName').textContent = data.customerName || '';
+  document.getElementById('pAddress1').textContent = data.customerAddress1 || '';
+  document.getElementById('pAddress2').textContent = data.customerAddress2 || '';
+  document.getElementById('pDate').textContent     = formatDocDate(data.invoiceDate);
+  document.getElementById('pTaxId').textContent    = data.customerTaxId || '';
+  document.getElementById('pInvNo').textContent    = data.invoiceNo || '';
+  document.getElementById('pCustCode').textContent = data.customerCustNo || '';
+
+  // หยอดรายการสินค้า 13 แถว (Row 1 ถึง 13)
+  const items = data.items || [];
+  for (let i = 1; i <= 13; i++) {
+    const tr = document.getElementById('row_' + i);
+    if (!tr) continue;
+    const item = items[i - 1] || null;
+
+    if (item && item.name) {
+      tr.querySelector('.num').textContent    = i;
+      tr.querySelector('.name').textContent   = item.name;
+      tr.querySelector('.qty').textContent    = item.qty ? (typeof item.qty === 'number' ? item.qty : item.qty) : '';
+      tr.querySelector('.unit').textContent   = item.unit || '';
+      tr.querySelector('.price').textContent  = item.price ? formatNum(item.price) : '';
+      tr.querySelector('.amount').textContent = item.total ? formatNum(item.total) : '';
+    } else {
+      // แถวว่าง
+      tr.querySelector('.num').textContent    = '';
+      tr.querySelector('.name').textContent   = '';
+      tr.querySelector('.qty').textContent    = '';
+      tr.querySelector('.unit').textContent   = '';
+      tr.querySelector('.price').textContent  = '';
+      tr.querySelector('.amount').textContent = '';
+    }
+  }
+
+  // สรุปยอดเงิน
+  const subtotal = data.subtotal || 0;
+  const vat = data.vat || 0;
+  const grandTotal = data.grandTotal || 0;
+
+  document.getElementById('pSubtotal').textContent   = formatNum(subtotal);
+  document.getElementById('pVat').textContent        = formatNum(vat);
+  document.getElementById('pGrandTotal').textContent = formatNum(grandTotal);
+  document.getElementById('pBahtText').textContent   = convertToThaiBaht(grandTotal);
+
+  // เรียกคำสั่งพิมพ์อัตโนมัติ (เปิดหน้าต่าง print dialog ทันที)
+  setTimeout(function() {
+    window.print();
+  }, 600);
+};
+
+// ดาวน์โหลดเป็น PDF สำหรับเครื่อง PC
+function downloadPdfDirectly() {
+  const btn = (typeof event !== 'undefined' && event && event.target) ? (event.target.closest('button') || event.target) : null;
+  const origText = btn ? btn.innerHTML : '📥 บันทึกเป็น PDF ลงเครื่อง PC';
+  if (btn) {
+    btn.innerHTML = '⏳ กำลังสร้าง PDF...';
+    btn.disabled = true;
+  }
+
+  const runDownload = function() {
+    const element = document.getElementById('invoicePage');
+    const invNo = (document.getElementById('pInvNo').textContent || 'Invoice').trim();
+    const cleanInvNo = invNo.replace(/[^a-zA-Z0-9ก-๙\-_]/g, '_');
+
+    const opt = {
+      margin:       0,
+      filename:     cleanInvNo + '.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        width: 764,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF:        { unit: 'px', format: [764, 1080], orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      if (btn) {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }).catch(err => {
+      alert('เกิดข้อผิดพลาดในการสร้าง PDF: ' + err);
+      if (btn) {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    });
+  };
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(runDownload);
+  } else {
+    runDownload();
+  }
+}
+
+// ปิดหน้าต่างพิมพ์ หรือกลับหน้าหลักถ้าเบราว์เซอร์บล็อค window.close()
+function closePrintPage() {
+  try { window.close(); } catch(e) {}
+  try { window.open('', '_self', ''); window.close(); } catch(e) {}
+
+  setTimeout(function() {
+    if (!window.closed) {
+      const baseUrl = window.location.href.split('?')[0];
+      if (confirm('เบราว์เซอร์บล็อคการปิดแท็บอัตโนมัติ (ระบบความปลอดภัยของเบราว์เซอร์)\n\nกด "ตกลง" เพื่อกลับไปยังหน้าหลัก หรือกดปิดเครื่องหมาย ✕ ที่หัวแท็บด้านบนของเบราว์เซอร์')) {
+        window.location.href = baseUrl;
+      }
+    }
+  }, 250);
+}
+
+// กลับไปยังหน้าหลักของ Web App
+function backToMainApp() {
+  const baseUrl = window.location.href.split('?')[0];
+  window.location.href = baseUrl;
+}
+</script>
+
+</body>
+</html>

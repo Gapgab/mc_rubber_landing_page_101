@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบใบกำกับภาษี</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <?!= include('stylesheet'); ?>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="color:#1a73e8;font-weight:600;">กำลังโหลด...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="app-header no-print">
+  <span style="font-size:28px;">🧾</span>
+  <div>
+    <h1>ระบบใบกำกับภาษี</h1>
+    <div class="subtitle">กรอกข้อมูลและพิมพ์ใบกำกับภาษี</div>
+  </div>
+</div>
+
+<!-- Main Container -->
+<div class="container">
+
+  <!-- ===== ส่วนที่ 1: ข้อมูลใบกำกับ ===== -->
+  <div class="card">
+    <div class="card-title">📋 ข้อมูลใบกำกับ</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>เลขที่ใบกำกับภาษี</label>
+        <input type="text" id="invoiceNo" placeholder="เช่น INV-2024-001" maxlength="30">
+      </div>
+      <div class="form-group">
+        <label>วันที่</label>
+        <input type="date" id="invoiceDate">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ส่วนที่ 2: ข้อมูลลูกค้า ===== -->
+  <div class="card">
+    <div class="card-title">👤 ข้อมูลลูกค้า</div>
+    <div class="customer-row">
+      <div class="form-group" style="flex:2">
+        <label>ชื่อลูกค้า <span style="color:red">*</span></label>
+        <div class="autocomplete-wrapper">
+          <input type="text"
+                 id="customerSearch"
+                 placeholder="🔍 คลิกหรือพิมพ์เพื่อค้นหาลูกค้า..."
+                 oninput="onCustomerInput(this.value)"
+                 onfocus="onCustomerInput(this.value)"
+                 onclick="onCustomerInput(this.value)"
+                 onkeydown="onCustomerKeydown(event)"
+                 autocomplete="off">
+          <div class="autocomplete-list" id="customerAutoList" onmousedown="event.preventDefault()"></div>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-outline" onclick="openAddCustomerModal()">➕ เพิ่มลูกค้าใหม่</button>
+      </div>
+    </div>
+
+    <div id="customerDetail" style="display:none; margin-top:14px;">
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>ที่อยู่ แถวที่ 1 (Address_1)</label>
+          <input type="text" id="customerAddress1" readonly>
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>ที่อยู่ แถวที่ 2 (Address_2)</label>
+          <input type="text" id="customerAddress2" readonly>
+        </div>
+        <div class="form-group">
+          <label>เลขประจำตัวผู้เสียภาษี</label>
+          <input type="text" id="customerTaxId" readonly>
+        </div>
+        <div class="form-group">
+          <label>เบอร์โทร</label>
+          <input type="text" id="customerPhone" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ส่วนที่ 3: รายการสินค้า ===== -->
+  <div class="card">
+    <div class="card-title">📦 รายการสินค้า (สูงสุด 13 รายการ)</div>
+    <div class="product-table-wrapper">
+      <table class="product-table" id="productTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:220px;">ชื่อสินค้า</th>
+            <th style="min-width:80px;">จำนวน</th>
+            <th style="min-width:100px;">หน่วย</th>
+            <th style="min-width:110px;">ราคา/หน่วย</th>
+            <th style="min-width:110px;">รวม (บาท)</th>
+          </tr>
+        </thead>
+        <tbody id="productTableBody">
+          <!-- แถวจะถูกสร้างโดย JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- สรุปราคา -->
+    <div class="summary-box">
+      <div class="summary-row">
+        <span>ราคาก่อน VAT</span>
+        <span class="summary-value" id="subtotalDisplay">0.00 บาท</span>
+      </div>
+      <div class="summary-row">
+        <span>VAT 7%</span>
+        <span class="summary-value" id="vatDisplay">0.00 บาท</span>
+      </div>
+      <div class="summary-row total">
+        <span>💰 ยอดรวมสุทธิ</span>
+        <span id="grandTotalDisplay">0.00 บาท</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Action Bar -->
+<div class="action-bar no-print">
+  <button class="btn btn-secondary" onclick="openPriceListModal()">📋 ดูราคาสินค้า</button>
+  <button class="btn btn-secondary" onclick="clearForm()">🗑️ ล้างฟอร์ม</button>
+  <button class="btn btn-success" onclick="saveAndPrint()" style="padding:10px 24px;font-size:15px;font-weight:700;">🖨️ บันทึก & พิมพ์ / ดาวน์โหลด PDF</button>
+</div>
+
+<!-- Datalist สำหรับ Dropdown รายการสินค้า -->
+<datalist id="productListDatalist"></datalist>
+
+<!-- ===== MODAL: ดูราคาสินค้าทั้งหมด (Sheet Ref) ===== -->
+<div class="modal-overlay" id="priceListModal" onclick="if(event.target===this)closePriceListModal()">
+  <div class="modal" style="max-width:920px;width:96%;max-height:92vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div class="modal-title" id="priceModalTitle" style="margin-bottom:2px">📋 รายการราคาทั้งหมด (Sheet Ref)</div>
+        <div id="priceModalSubtitle" style="font-size:12px;color:#666;">ตารางรวมประวัติราคาและสินค้าทั้งหมด — ค้นหาแยกตามลูกค้าและสินค้าได้แบบเรียลไทม์</div>
+      </div>
+      <button class="btn btn-secondary" style="padding:6px 12px;font-size:13px" onclick="closePriceListModal()">✕ ปิด</button>
+    </div>
+
+    <!-- แถบค้นหา 2 ช่อง: ชื่อลูกค้า / รหัสลูกค้า และ ชื่อสินค้า -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-weight:700;color:#1a73e8;font-size:12px;">👤 ค้นหาชื่อลูกค้า / รหัสลูกค้า:</label>
+        <div style="position:relative;">
+          <input type="text" id="modalCustSearch"
+                 placeholder="พิมพ์ชื่อลูกค้า หรือ รหัส เช่น A0009, ซิมาเทค..."
+                 oninput="applyModalFilter()"
+                 style="width:100%;padding:8px 30px 8px 12px;border:1.5px solid #1a73e8;border-radius:8px;font-size:13px;font-family:inherit;background:#f0f7ff;font-weight:600;">
+          <span onclick="clearCustFilter()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#999;font-weight:bold;font-size:14px;" title="ล้าง">✕</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label style="font-weight:700;color:#1a73e8;font-size:12px;">📦 ค้นหาชื่อสินค้า:</label>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <label for="yearFilter" style="font-size:12px;font-weight:600;color:#555;">📅 เลือกปี:</label>
+            <select id="yearFilter" onchange="reloadPriceDataByYear()" style="padding:2px 8px;border:1.5px solid #1a73e8;border-radius:6px;font-size:12px;font-weight:700;color:#1a73e8;background:#fff;cursor:pointer;">
+              <!-- เติม option ปีด้วย JS จาก getAvailableYears() -->
+            </select>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <input type="text" id="modalProdSearch"
+                 placeholder="พิมพ์ชื่อสินค้า เช่น ยาง, สายพาน, ล้อ..."
+                 oninput="applyModalFilter()"
+                 style="width:100%;padding:8px 30px 8px 12px;border:1.5px solid #dde1e7;border-radius:8px;font-size:13px;font-family:inherit;background:white;">
+          <span onclick="clearProdFilter()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#999;font-weight:bold;font-size:14px;" title="ล้าง">✕</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- แถบปุ่มลัดและสถิติ -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:4px 0;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="filterCurrentCustomerOnly()">⭐ เฉพาะลูกค้ารายนี้</button>
+        <button type="button" class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="showAllRecords()">🌐 แสดงทั้งหมด (ทุกราย)</button>
+      </div>
+      <div id="priceListCount" style="font-size:12px;color:#1a73e8;font-weight:700;"></div>
+    </div>
+
+    <!-- ตารางแสดงผลลัพธ์ -->
+    <div style="flex:1;overflow-y:auto;border-radius:8px;border:1px solid #e8e8e8;min-height:220px;max-height:460px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#1a73e8;color:white;position:sticky;top:0;z-index:2;">
+            <th style="padding:9px 6px;text-align:center;width:40px;">#</th>
+            <th style="padding:9px 6px;text-align:center;width:85px;">วันที่</th>
+            <th style="padding:9px 6px;text-align:center;width:75px;">รหัส</th>
+            <th style="padding:9px 8px;text-align:left;min-width:140px;max-width:180px;">ลูกค้า</th>
+            <th style="padding:9px 8px;text-align:left;min-width:180px;">ชื่อสินค้า</th>
+            <th style="padding:9px 6px;text-align:center;width:60px;">จำนวน</th>
+            <th style="padding:9px 6px;text-align:center;width:55px;">หน่วย</th>
+            <th style="padding:9px 8px;text-align:right;width:95px;">ราคา/หน่วย</th>
+            <th style="padding:9px 8px;text-align:center;width:75px;">เลือก</th>
+          </tr>
+        </thead>
+        <tbody id="priceListBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: เพิ่มลูกค้าใหม่ ===== -->
+<div class="modal-overlay" id="addCustomerModal">
+  <div class="modal">
+    <div class="modal-title">➕ เพิ่มลูกค้าใหม่</div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ชื่อลูกค้า / บริษัท <span style="color:red">*</span></label>
+      <input type="text" id="newCustName" placeholder="กรอกชื่อลูกค้า">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ที่อยู่ — แถวที่ 1 (Address_1)</label>
+      <input type="text" id="newCustAddress1" placeholder="เช่น 123/45 ถ.สุขุมวิท แขวงคลองเตย">
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ที่อยู่ — แถวที่ 2 (Address_2)</label>
+      <input type="text" id="newCustAddress2" placeholder="เช่น เขตคลองเตย กรุงเทพมหานคร 10110">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>เลขประจำตัวผู้เสียภาษี</label>
+        <input type="text" id="newCustTaxId" placeholder="0000000000000" maxlength="13">
+      </div>
+      <div class="form-group">
+        <label>เบอร์โทร</label>
+        <input type="text" id="newCustPhone" placeholder="0xx-xxx-xxxx">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAddCustomerModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitNewCustomer()">💾 บันทึกลูกค้า</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+//  JavaScript — index.html
+// ==========================================
+
+let allCustomers    = [];
+let allProducts     = [];
+let allRefPriceData = [];
+const MAX_ITEMS     = 13;
+const VAT_RATE      = 0.07;
+const UNITS         = ['ชิ้น','กล่อง','แผ่น','อัน','กก.','ลิตร','เมตร','ม้วน','ถุง','แพ็ค','ชุด','โหล'];
+const WEB_APP_URL   = '<?= webAppUrl ?>';
+
+// ---------- Init ----------
+window.onload = function() {
+  setTodayDate();
+  buildProductRows();
+  loadData();
+};
+
+function setTodayDate() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('invoiceDate').value = `${y}-${m}-${d}`;
+}
+
+function loadData() {
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (data && data.success !== false) {
+        allCustomers    = data.customers || [];
+        allProducts     = data.products  || [];
+        populateProductDatalist();
+        showLoading(false);
+        showToast('โหลดสำเร็จ: ' + allCustomers.length + ' ลูกค้า, ' + allProducts.length + ' รายการสินค้า', 'info');
+      } else {
+        showLoading(false);
+        showToast('แจ้งเตือน: ' + (data ? data.error : 'ไม่สามารถโหลดข้อมูลเริ่มต้นได้'), 'error');
+      }
+      // โหลดรายการปี และดึงข้อมูลประวัติราคาเริ่มต้น
+      loadAvailableYearsAndInitPrice();
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      showToast('โหลดข้อมูลไม่สำเร็จ: ' + err, 'error');
+      loadAvailableYearsAndInitPrice();
+    })
+    .getBothData();
+}
+
+// ---------- โหลดรายการปีและดึงประวัติราคาเริ่มต้น ----------
+function loadAvailableYearsAndInitPrice() {
+  google.script.run
+    .withSuccessHandler(function(years) {
+      populateYearDropdown(years);
+      const defaultYear = (years && years.length > 0) ? years[0] : new Date().getFullYear();
+      loadAllRefPriceInBackground(defaultYear);
+    })
+    .withFailureHandler(function(err) {
+      console.warn('getAvailableYears error:', err);
+      const fallbackYear = new Date().getFullYear();
+      populateYearDropdown([fallbackYear]);
+      loadAllRefPriceInBackground(fallbackYear);
+    })
+    .getAvailableYears();
+}
+
+function populateYearDropdown(years) {
+  const select = document.getElementById('yearFilter');
+  if (!select) return;
+  select.innerHTML = '';
+  if (years && years.length > 0) {
+    years.forEach(function(y) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = 'ปี ' + y;
+      select.appendChild(opt);
+    });
+    // เพิ่มตัวเลือกดูทุกปี
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all';
+    allOpt.textContent = '🌐 ทุกปี (ทั้งหมด)';
+    select.appendChild(allOpt);
+
+    select.value = years[0];
+  } else {
+    const curYear = new Date().getFullYear();
+    const opt = document.createElement('option');
+    opt.value = curYear;
+    opt.textContent = 'ปี ' + curYear;
+    select.appendChild(opt);
+  }
+}
+
+function loadAllRefPriceInBackground(year) {
+  const targetYear = year || (document.getElementById('yearFilter') ? document.getElementById('yearFilter').value : new Date().getFullYear());
+  google.script.run
+    .withSuccessHandler(function(list) {
+      if (list && list.length > 0) {
+        allRefPriceData = list;
+        populateProductDatalist();
+      }
+    })
+    .withFailureHandler(function(err) {
+      console.warn('loadAllRefPriceInBackground error:', err);
+    })
+    .getAllRefPriceData(targetYear);
+}
+
+// ฟังก์ชันเมื่อผู้ใช้เปลี่ยนปีใน DropDown
+function reloadPriceDataByYear() {
+  const selectEl = document.getElementById('yearFilter');
+  const selectedYear = selectEl ? selectEl.value : new Date().getFullYear();
+
+  const tbody = document.getElementById('priceListBody');
+  if (tbody && document.getElementById('priceListModal').classList.contains('show')) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#1a73e8;font-weight:600;">⏳ กำลังโหลดข้อมูลปี ' + (selectedYear === 'all' ? 'ทั้งหมด' : selectedYear) + '...</td></tr>';
+  }
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      allRefPriceData = data || [];
+      populateProductDatalist();
+      applyModalFilter();
+      showToast('โหลดข้อมูลราคาปี ' + (selectedYear === 'all' ? 'ทั้งหมด' : selectedYear) + ' สำเร็จ (' + allRefPriceData.length + ' รายการ)', 'info');
+    })
+    .withFailureHandler(function(err) {
+      console.warn('reloadPriceDataByYear error:', err);
+      showToast('โหลดข้อมูลล้มเหลว: ' + err, 'error');
+      if (tbody && document.getElementById('priceListModal').classList.contains('show')) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:red;">❌ โหลดข้อมูลไม่สำเร็จ: ' + err + '</td></tr>';
+      }
+    })
+    .getAllRefPriceData(selectedYear);
+}
+
+// ---------- Build Product Rows ----------
+function buildProductRows() {
+  const tbody = document.getElementById('productTableBody');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= MAX_ITEMS; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i}</td>
+      <td>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <input type="text"
+                 id="prod_name_${i}"
+                 list="productListDatalist"
+                 placeholder="▾ เลือกจาก DropDown หรือพิมพ์..."
+                 onchange="onDatalistSelect(${i}, this.value)"
+                 oninput="calcRow(${i})"
+                 style="flex:1;">
+          <button type="button"
+                  class="btn btn-outline"
+                  style="padding:5px 8px;font-size:11px;white-space:nowrap;border-radius:6px;cursor:pointer;"
+                  onclick="openPriceListModal(${i})"
+                  title="เปิดหน้าต่างค้นหาและดูราคา">
+            🔍 เลือก
+          </button>
+        </div>
+      </td>
+      <td>
+        <input type="number" id="prod_qty_${i}" min="0" step="any"
+               placeholder="0" oninput="calcRow(${i})">
+      </td>
+      <td>
+        <select id="prod_unit_${i}">
+          ${UNITS.map(u => `<option>${u}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input type="number" id="prod_price_${i}" min="0" step="0.01"
+               placeholder="0.00" oninput="calcRow(${i})">
+      </td>
+      <td class="col-total">
+        <input type="number" id="prod_total_${i}" readonly placeholder="0.00">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ---------- Customer Searchable Dropdown ----------
+let selectedCustomerIdx  = -1; // เก็บ index ของลูกค้าที่เลือก
+let currentCustomerFocus = -1; // ตำแหน่ง highlight เมื่อกดลูกศรขึ้น/ลง
+
+function escapeHtmlStr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function onCustomerInput(val) {
+  currentCustomerFocus = -1; // รีเซ็ตตำแหน่ง highlight เมื่อพิมพ์หรือค้นหาใหม่
+  const list = document.getElementById('customerAutoList');
+  if (!allCustomers || allCustomers.length === 0) {
+    list.classList.remove('show');
+    return;
+  }
+  const kw = (val || '').trim().toLowerCase();
+  // ค้นหาทั้งจากชื่อลูกค้า และรหัสลูกค้า
+  const matches = allCustomers
+    .map((c, idx) => ({ ...c, idx }))
+    .filter(c => {
+      if (!kw) return true; // ถ้าเว้นว่าง หรือเพิ่งกดคลิกเข้ามา ให้แสดงทุกลูกค้าเพื่อให้ Scroll เลื่อนดูได้
+      const nameMatch = (c.name || '').toLowerCase().includes(kw);
+      const codeMatch = (c.custNo || '').toLowerCase().includes(kw);
+      return nameMatch || codeMatch;
+    });
+
+  if (matches.length === 0) {
+    list.innerHTML = '<div style="padding:10px 14px;color:#888;font-size:13px;text-align:center;">ไม่พบข้อมูลลูกค้า</div>';
+    list.classList.add('show');
+    return;
+  }
+
+  list.innerHTML = matches.map(c => `
+    <div class="autocomplete-item"
+         onclick="selectCustomer(${c.idx})">
+      <span><strong>${escapeHtmlStr(c.name)}</strong></span>
+      <span class="item-price" style="color:#1a73e8;font-size:12px;font-weight:600;">${escapeHtmlStr(c.custNo || '')}</span>
+    </div>
+  `).join('');
+  list.classList.add('show');
+}
+
+// ควบคุมการเลื่อนแถบตัวเลือกด้วยปุ่มลูกศรขึ้น-ลง และ Enter
+function onCustomerKeydown(e) {
+  const list = document.getElementById('customerAutoList');
+  if (!list) return;
+
+  const isListOpen = list.classList.contains('show');
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (!isListOpen) {
+      onCustomerInput(document.getElementById('customerSearch').value);
+    }
+    const items = list.getElementsByClassName('autocomplete-item');
+    if (!items || items.length === 0) return;
+    currentCustomerFocus++;
+    if (currentCustomerFocus >= items.length) {
+      currentCustomerFocus = 0; // วนกลับไปรายการแรก
+    }
+    setActiveCustomerItem(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (!isListOpen) return;
+    const items = list.getElementsByClassName('autocomplete-item');
+    if (!items || items.length === 0) return;
+    currentCustomerFocus--;
+    if (currentCustomerFocus < 0) {
+      currentCustomerFocus = items.length - 1; // วนกลับไปรายการสุดท้าย
+    }
+    setActiveCustomerItem(items);
+  } else if (e.key === 'Enter') {
+    if (isListOpen && currentCustomerFocus > -1) {
+      e.preventDefault();
+      const items = list.getElementsByClassName('autocomplete-item');
+      if (items && items[currentCustomerFocus]) {
+        items[currentCustomerFocus].click();
+      }
+    }
+  } else if (e.key === 'Escape') {
+    list.classList.remove('show');
+    currentCustomerFocus = -1;
+  }
+}
+
+function setActiveCustomerItem(items) {
+  if (!items || items.length === 0) return;
+  for (let i = 0; i < items.length; i++) {
+    items[i].classList.remove('active');
+  }
+  if (currentCustomerFocus >= 0 && currentCustomerFocus < items.length) {
+    const el = items[currentCustomerFocus];
+    el.classList.add('active');
+    // เลื่อน Scrollbar ของกล่องให้อยู่ในมุมมองอัตโนมัติ
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function selectCustomer(idx) {
+  const c = allCustomers[idx];
+  if (!c) return;
+  selectedCustomerIdx  = idx;
+  currentCustomerFocus = -1;
+  document.getElementById('customerSearch').value    = c.name;
+  document.getElementById('customerAddress1').value  = c.address1 || '';
+  document.getElementById('customerAddress2').value  = c.address2 || '';
+  document.getElementById('customerTaxId').value     = c.taxId    || '';
+  document.getElementById('customerPhone').value     = c.phone    || '';
+  document.getElementById('customerDetail').style.display = 'block';
+  document.getElementById('customerAutoList').classList.remove('show');
+
+  // อัปเดตรายการสินค้าใน Dropdown
+  populateProductDatalist();
+}
+
+function hideCustomerList() {
+  document.getElementById('customerAutoList').classList.remove('show');
+  currentCustomerFocus = -1;
+}
+
+// ปิด Dropdown เมื่อคลิกนอกพื้นที่ช่องค้นหาและรายการ
+document.addEventListener('click', function(e) {
+  const searchInput = document.getElementById('customerSearch');
+  const autoList    = document.getElementById('customerAutoList');
+  if (!searchInput || !autoList) return;
+  if (!searchInput.contains(e.target) && !autoList.contains(e.target)) {
+    autoList.classList.remove('show');
+    currentCustomerFocus = -1;
+  }
+});
+
+// ฟังก์ชันนี้ยังคงใช้เมื่อเพิ่มลูกค้าใหม่
+function refreshCustomerAfterAdd(customer) {
+  const idx = allCustomers.length - 1;
+  document.getElementById('customerSearch').value    = customer.name;
+  document.getElementById('customerAddress1').value  = customer.address1 || '';
+  document.getElementById('customerAddress2').value  = customer.address2 || '';
+  document.getElementById('customerTaxId').value     = customer.taxId    || '';
+  document.getElementById('customerPhone').value     = customer.phone    || '';
+  selectedCustomerIdx = idx;
+  document.getElementById('customerDetail').style.display = 'block';
+}
+
+// ---------- Product Searchable Dropdown ----------
+function onProductFocus(row) {
+  const val = document.getElementById(`prod_name_${row}`).value;
+  renderProductDropdown(row, val);
+}
+
+function onProductInput(row, val) {
+  renderProductDropdown(row, val);
+}
+
+function renderProductDropdown(row, val) {
+  const list = document.getElementById(`auto_${row}`);
+  const kw = (val || '').trim().toLowerCase();
+
+  const combined = [];
+  const seen = new Set();
+
+  // 1. สินค้าที่ลูกค้ารายนี้เคยสั่งซื้อ (จาก customerPriceList) แสดงไว้บนสุด
+  if (customerPriceList && customerPriceList.length > 0) {
+    customerPriceList.forEach(p => {
+      const key = (p.product || '').toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        if (!kw || key.includes(kw)) {
+          combined.push({
+            name: p.product,
+            price: p.price,
+            unit: p.unit,
+            isHistory: true,
+            date: p.date
+          });
+        }
+      }
+    });
+  }
+
+  // 2. สินค้าทั้งหมดทั่วไปจาก REF_PRICE
+  if (allProducts && allProducts.length > 0) {
+    allProducts.forEach(p => {
+      const key = (p.name || '').toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        if (!kw || key.includes(kw)) {
+          combined.push({
+            name: p.name,
+            price: p.price,
+            unit: p.unit,
+            isHistory: false,
+            date: ''
+          });
+        }
+      }
+    });
+  }
+
+  if (combined.length === 0) {
+    list.innerHTML = '<div style="padding:10px;color:#aaa;text-align:center;font-size:12px;">ไม่พบรายการสินค้า</div>';
+    list.classList.add('show');
+    return;
+  }
+
+  // แสดงผลสูงสุด 20 รายการ
+  const displayItems = combined.slice(0, 20);
+  list.innerHTML = displayItems.map(p => `
+    <div class="autocomplete-item"
+         style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer;"
+         onmousedown="selectProduct(${row}, '${escapeStr(p.name)}', ${p.price}, '${escapeStr(p.unit)}')">
+      <div style="flex:1;padding-right:8px;">
+        <div style="font-weight:600;color:#222;font-size:13px;">${p.name}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">
+          ${p.isHistory ? '<span style="color:#1a73e8;font-weight:700;">⭐ เคยสั่ง (' + (p.date || '') + ')</span> • ' : ''}หน่วย: ${p.unit}
+        </div>
+      </div>
+      <div style="text-align:right;white-space:nowrap;">
+        <span class="item-price" style="font-weight:700;color:#1a73e8;font-size:13px;">฿${formatNum(p.price)}</span>
+      </div>
+    </div>
+  `).join('');
+  list.classList.add('show');
+}
+
+function selectProduct(row, name, price, unit) {
+  document.getElementById(`prod_name_${row}`).value  = name;
+  document.getElementById(`prod_price_${row}`).value = price;
+
+  // Set unit dropdown
+  const unitSel = document.getElementById(`prod_unit_${row}`);
+  let foundUnit = false;
+  for (let o of unitSel.options) {
+    if (o.value === unit) { o.selected = true; foundUnit = true; break; }
+  }
+  if (!foundUnit && unit) {
+    const opt = document.createElement('option');
+    opt.value = unit;
+    opt.textContent = unit;
+    opt.selected = true;
+    unitSel.appendChild(opt);
+  }
+
+  document.getElementById(`auto_${row}`).classList.remove('show');
+  calcRow(row);
+  document.getElementById(`prod_qty_${row}`).focus();
+}
+
+function hideAutoComplete(row) {
+  setTimeout(() => {
+    const list = document.getElementById(`auto_${row}`);
+    if (list) list.classList.remove('show');
+  }, 250);
+}
+
+// ---------- เติมตัวเลือกใน Product Datalist (DropDown) ----------
+function populateProductDatalist() {
+  const datalist = document.getElementById('productListDatalist');
+  if (!datalist) return;
+  datalist.innerHTML = '';
+
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+  const custNo = cust ? (cust.custNo || '') : '';
+  const custName = cust ? (cust.name || '').toLowerCase() : '';
+
+  const seen = new Set();
+
+  // 1. สินค้าที่ลูกค้ารายนี้เคยสั่งซื้อ (ค้นจาก allRefPriceData)
+  if (custName && allRefPriceData && allRefPriceData.length > 0) {
+    allRefPriceData.forEach(p => {
+      const s = (p.customerSearchText || (p.custNo + ' ' + p.custName)).toLowerCase();
+      if (s.includes(custName) || (custNo && s.includes(custNo.toLowerCase()))) {
+        const pName = (p.product || '').replace(/^\[[^\]]+\]\s*/, '').trim();
+        if (!pName) return;
+        const key = pName.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          const opt = document.createElement('option');
+          opt.value = pName;
+          datalist.appendChild(opt);
+        }
+      }
+    });
+  }
+
+  // 2. สินค้าทั้งหมดจาก allRefPriceData
+  if (allRefPriceData && allRefPriceData.length > 0) {
+    allRefPriceData.forEach(p => {
+      const pName = (p.product || '').replace(/^\[[^\]]+\]\s*/, '').trim();
+      if (!pName) return;
+      const key = pName.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        const opt = document.createElement('option');
+        opt.value = pName;
+        datalist.appendChild(opt);
+      }
+    });
+  }
+
+  // 3. สินค้าจาก allProducts สำรอง
+  if (allProducts && allProducts.length > 0) {
+    allProducts.forEach(p => {
+      const pName = (p.name || '').replace(/^\[[^\]]+\]\s*/, '').trim();
+      if (!pName) return;
+      const key = pName.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        const opt = document.createElement('option');
+        opt.value = pName;
+        datalist.appendChild(opt);
+      }
+    });
+  }
+}
+
+// เมื่อเลือกสินค้าจาก Datalist
+function onDatalistSelect(row, val) {
+  if (!val) { calcRow(row); return; }
+
+  // ตัด [รหัสลูกค้า] ออกถ้ามีหลุดมา ใส่เฉพาะชื่อสินค้าแท้
+  const cleanName = val.replace(/^\[[^\]]+\]\s*/, '').trim();
+  document.getElementById(`prod_name_${row}`).value = cleanName;
+
+  const searchKey = cleanName.toLowerCase();
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+  const custName = cust ? (cust.name || '').toLowerCase() : '';
+  const custNo   = cust ? (cust.custNo || '').toLowerCase() : '';
+
+  let matched = null;
+  // ค้นหาใน allRefPriceData ของลูกค้ารายนี้ก่อน
+  if (custName && allRefPriceData && allRefPriceData.length > 0) {
+    matched = allRefPriceData.find(p => {
+      const s = (p.customerSearchText || (p.custNo + ' ' + p.custName)).toLowerCase();
+      const isCust = s.includes(custName) || (custNo && s.includes(custNo));
+      const pName = (p.product || '').replace(/^\[[^\]]+\]\s*/, '').trim().toLowerCase();
+      return isCust && pName === searchKey;
+    });
+  }
+
+  // ถ้ายังไม่พบ หาจาก allRefPriceData ทั้งหมด
+  if (!matched && allRefPriceData && allRefPriceData.length > 0) {
+    matched = allRefPriceData.find(p => {
+      const pName = (p.product || '').replace(/^\[[^\]]+\]\s*/, '').trim().toLowerCase();
+      return pName === searchKey;
+    });
+  }
+
+  // สำรองหาจาก allProducts
+  if (!matched && allProducts && allProducts.length > 0) {
+    matched = allProducts.find(p => {
+      const pName = (p.name || '').replace(/^\[[^\]]+\]\s*/, '').trim().toLowerCase();
+      return pName === searchKey;
+    });
+  }
+
+  if (matched) {
+    document.getElementById(`prod_price_${row}`).value = matched.price || 0;
+    const unitSel = document.getElementById(`prod_unit_${row}`);
+    let foundUnit = false;
+    for (let o of unitSel.options) {
+      if (o.value === matched.unit) { o.selected = true; foundUnit = true; break; }
+    }
+    if (!foundUnit && matched.unit) {
+      const opt = document.createElement('option');
+      opt.value = matched.unit;
+      opt.textContent = matched.unit;
+      opt.selected = true;
+      unitSel.appendChild(opt);
+    }
+  }
+
+  calcRow(row);
+  const qtyInput = document.getElementById(`prod_qty_${row}`);
+  if (!qtyInput.value || qtyInput.value === '0') {
+    qtyInput.value = (matched && matched.qty) ? matched.qty : 1;
+    calcRow(row);
+  }
+}
+
+// ---------- Calculate ----------
+function calcRow(row) {
+  const qty   = parseFloat(document.getElementById(`prod_qty_${row}`).value)   || 0;
+  const price = parseFloat(document.getElementById(`prod_price_${row}`).value) || 0;
+  const total = qty * price;
+  document.getElementById(`prod_total_${row}`).value = total > 0 ? total.toFixed(2) : '';
+  calcSummary();
+}
+
+function calcSummary() {
+  let subtotal = 0;
+  for (let i = 1; i <= MAX_ITEMS; i++) {
+    subtotal += parseFloat(document.getElementById(`prod_total_${i}`).value) || 0;
+  }
+  const vat        = subtotal * VAT_RATE;
+  const grandTotal = subtotal + vat;
+  document.getElementById('subtotalDisplay').textContent  = formatNum(subtotal)  + ' บาท';
+  document.getElementById('vatDisplay').textContent       = formatNum(vat)       + ' บาท';
+  document.getElementById('grandTotalDisplay').textContent= formatNum(grandTotal)+ ' บาท';
+}
+
+// ---------- Collect Form Data ----------
+function collectData() {
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+
+  const items = [];
+  let subtotal = 0;
+  for (let i = 1; i <= MAX_ITEMS; i++) {
+    const name  = document.getElementById(`prod_name_${i}`).value.trim();
+    const qty   = parseFloat(document.getElementById(`prod_qty_${i}`).value)   || 0;
+    const unit  = document.getElementById(`prod_unit_${i}`).value;
+    const price = parseFloat(document.getElementById(`prod_price_${i}`).value) || 0;
+    const total = qty * price;
+    items.push({ name, qty: qty||'', unit, price: price||'', total: total||'' });
+    subtotal += total;
+  }
+
+  const vat        = subtotal * VAT_RATE;
+  const grandTotal = subtotal + vat;
+
+  return {
+    invoiceNo       : document.getElementById('invoiceNo').value.trim(),
+    invoiceDate     : document.getElementById('invoiceDate').value,
+    customerName    : cust ? cust.name     : '',
+    customerAddress1: cust ? cust.address1 : '',
+    customerAddress2: cust ? cust.address2 : '',
+    customerCustNo  : cust ? cust.custNo   : '',
+    customerTaxId   : cust ? cust.taxId    : '',
+    customerPhone   : cust ? cust.phone    : '',
+    items,
+    subtotal       : +subtotal.toFixed(2),
+    vat            : +vat.toFixed(2),
+    grandTotal     : +grandTotal.toFixed(2)
+  };
+}
+
+function validateForm(data) {
+  if (!data.customerName) { showToast('กรุณาเลือกลูกค้า', 'error'); return false; }
+  const hasItem = data.items.some(it => it.name && it.qty);
+  if (!hasItem) { showToast('กรุณากรอกรายการสินค้าอย่างน้อย 1 รายการ', 'error'); return false; }
+  return true;
+}
+
+// ---------- Save & Print (บันทึก & เปิดหน้าพิมพ์ / ดาวน์โหลด PDF) ----------
+function saveAndPrint() {
+  const data = collectData();
+  if (!validateForm(data)) return;
+  showLoading(true);
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      showLoading(false);
+      if (res && res.success) {
+        showToast('💾 บันทึกสำเร็จเรียบร้อย! กำลังเปิดหน้าพิมพ์...', 'success');
+        openPrintPage(data);
+      } else {
+        showToast('เกิดข้อผิดพลาดในการบันทึก: ' + (res ? res.message : 'ไม่ทราบสาเหตุ'), 'error');
+      }
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      showToast('เกิดข้อผิดพลาดในการบันทึก: ' + err, 'error');
+    })
+    .saveInvoice(data);
+}
+
+// ดาวน์โหลด PDF จาก base64 ลงเครื่อง PC ทันที
+function downloadBase64Pdf(base64, filename) {
+  try {
+    var byteCharacters = atob(base64);
+    var byteNumbers = new Array(byteCharacters.length);
+    for (var i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    var byteArray = new Uint8Array(byteNumbers);
+    var blob = new Blob([byteArray], { type: 'application/pdf' });
+    var url = URL.createObjectURL(blob);
+
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'invoice.pdf';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1500);
+  } catch(e) {
+    console.error('downloadBase64Pdf error:', e);
+    showToast('❌ ดาวน์โหลด PDF ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+  }
+}
+
+// เปิดหน้าพิมพ์สำรอง (Print Preview)
+function openPrintPage(data) {
+  const encoded = encodeURIComponent(JSON.stringify(data));
+  const baseUrl = WEB_APP_URL || window.location.href.split('?')[0];
+  const printUrl = baseUrl + (baseUrl.indexOf('?') >= 0 ? '&' : '?') + 'page=print&data=' + encoded;
+  
+  // ลองเปิด tab ใหม่
+  const win = window.open(printUrl, '_blank');
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    // กรณีที่บราวเซอร์บล็อค Pop-up ให้แสดงลิงก์ให้ผู้ใช้คลิกเอง
+    showToast('⚠️ เบราว์เซอร์บล็อคหน้าต่างใหม่ กรุณากดปุ่มเปิดหน้าพิมพ์', 'info');
+    let banner = document.getElementById('popupBlockedBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'popupBlockedBanner';
+      banner.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a73e8;color:white;padding:12px 24px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;display:flex;align-items:center;gap:12px;font-size:14px;';
+      document.body.appendChild(banner);
+    }
+    banner.innerHTML = `
+      <span>📄 เอกสารพร้อมแล้ว:</span>
+      <a href="${printUrl}" target="_blank" style="background:white;color:#1a73e8;padding:6px 14px;border-radius:6px;font-weight:700;text-decoration:none;">🖨️ เปิดดู / พิมพ์ใบกำกับภาษี</a>
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;margin-left:8px;">✕</button>
+    `;
+  }
+}
+
+// ---------- Clear ----------
+function clearForm() {
+  if (!confirm('ต้องการล้างข้อมูลทั้งหมดในฟอร์มใช่ไหม?')) return;
+  document.getElementById('invoiceNo').value     = '';
+  setTodayDate();
+  document.getElementById('customerSearch').value = '';
+  selectedCustomerIdx = -1;
+  document.getElementById('customerDetail').style.display = 'none';
+  for (let i = 1; i <= MAX_ITEMS; i++) {
+    document.getElementById(`prod_name_${i}`).value  = '';
+    document.getElementById(`prod_qty_${i}`).value   = '';
+    document.getElementById(`prod_price_${i}`).value = '';
+    document.getElementById(`prod_total_${i}`).value = '';
+    document.getElementById(`prod_unit_${i}`).selectedIndex = 0;
+  }
+  calcSummary();
+}
+
+// ---------- Add Customer Modal ----------
+function openAddCustomerModal() {
+  document.getElementById('newCustName').value     = '';
+  document.getElementById('newCustAddress1').value = '';
+  document.getElementById('newCustAddress2').value = '';
+  document.getElementById('newCustTaxId').value    = '';
+  document.getElementById('newCustPhone').value    = '';
+  document.getElementById('addCustomerModal').classList.add('show');
+  setTimeout(() => document.getElementById('newCustName').focus(), 100);
+}
+
+function closeAddCustomerModal() {
+  document.getElementById('addCustomerModal').classList.remove('show');
+}
+
+function submitNewCustomer() {
+  const name = document.getElementById('newCustName').value.trim();
+  if (!name) { showToast('กรุณากรอกชื่อลูกค้า', 'error'); return; }
+
+  const customer = {
+    name    : name,
+    address1: document.getElementById('newCustAddress1').value.trim(),
+    address2: document.getElementById('newCustAddress2').value.trim(),
+    taxId   : document.getElementById('newCustTaxId').value.trim(),
+    phone   : document.getElementById('newCustPhone').value.trim()
+  };
+
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(function(res) {
+      showLoading(false);
+      if (res.success) {
+        if (res.custNo) customer.custNo = res.custNo;
+        allCustomers.push(customer);
+        refreshCustomerAfterAdd(customer);
+        closeAddCustomerModal();
+        showToast('✅ เพิ่มลูกค้าเรียบร้อย!', 'success');
+      } else {
+        showToast('❌ ' + res.message, 'error');
+      }
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      showToast('เกิดข้อผิดพลาด: ' + err, 'error');
+    })
+    .addCustomer(customer);
+}
+
+// ---------- Helpers ----------
+function formatNum(n) {
+  return Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeStr(s) {
+  return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+let loadingTimer = null;
+function showLoading(show) {
+  const el = document.getElementById('loadingOverlay');
+  if (!el) return;
+  el.classList.toggle('show', show);
+  if (show) {
+    if (loadingTimer) clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(function() {
+      if (el.classList.contains('show')) {
+        el.classList.remove('show');
+        showToast('⚠️ การโหลดใช้เวลานาน ระบบเปิดหน้าจอให้คุณทำงานต่อได้', 'info');
+      }
+    }, 6000);
+  } else {
+    if (loadingTimer) clearTimeout(loadingTimer);
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('addCustomerModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddCustomerModal();
+});
+
+// ==========================================
+//  📋 Price List Modal (ตารางรวม Sheet Ref + Realtime Dual Filter)
+// ==========================================
+let currentTargetRow = null; // แถวที่จะนำสินค้าไปใส่
+window.currentModalItems = []; // เก็บ items ที่กำลังแสดงในตาราง
+
+function openPriceListModal(targetRow) {
+  currentTargetRow = targetRow || null;
+
+  // กำหนดชื่อหรือรหัสลูกค้าปัจจุบันลงในช่องค้นหาลูกค้า
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+  const custName = cust ? (cust.name || '') : '';
+  const custNo   = cust ? (cust.custNo || '') : '';
+
+  const custSearchInput = document.getElementById('modalCustSearch');
+  const prodSearchInput = document.getElementById('modalProdSearch');
+
+  if (custSearchInput) {
+    // ใส่รหัส หรือ ชื่อลูกค้า เพื่อกรองเริ่มต้น
+    custSearchInput.value = custNo || custName || '';
+  }
+  if (prodSearchInput) {
+    prodSearchInput.value = '';
+  }
+
+  const rowSuffix = currentTargetRow ? (' [สำหรับแถวที่ ' + currentTargetRow + ']') : '';
+  document.getElementById('priceModalTitle').textContent = '📋 รายการราคาทั้งหมด (Sheet Ref)' + rowSuffix;
+
+  document.getElementById('priceListModal').classList.add('show');
+
+  // ตรวจสอบว่าโหลดข้อมูล Sheet Ref มาแล้วหรือยัง
+  if (!allRefPriceData || allRefPriceData.length === 0) {
+    const tbody = document.getElementById('priceListBody');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#1a73e8;font-weight:600;">⏳ กำลังโหลดตารางราคาจาก Sheet Ref...</td></tr>';
+    const selYear = document.getElementById('yearFilter') ? document.getElementById('yearFilter').value : '';
+    google.script.run
+      .withSuccessHandler(function(data) {
+        allRefPriceData = data || [];
+        populateProductDatalist();
+        applyModalFilter();
+      })
+      .withFailureHandler(function(err) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:red;">❌ โหลดข้อมูลไม่สำเร็จ: ' + err + '</td></tr>';
+      })
+      .getAllRefPriceData(selYear || new Date().getFullYear());
+  } else {
+    applyModalFilter();
+  }
+
+  setTimeout(() => {
+    if (prodSearchInput) prodSearchInput.focus();
+  }, 100);
+}
+
+function closePriceListModal() {
+  document.getElementById('priceListModal').classList.remove('show');
+}
+
+// กรองข้อมูลแบบเรียลไทม์ตาม 2 ช่องค้นหา (ลูกค้า และ สินค้า)
+function applyModalFilter() {
+  const custKw = (document.getElementById('modalCustSearch').value || '').trim().toLowerCase();
+  const prodKw = (document.getElementById('modalProdSearch').value || '').trim().toLowerCase();
+
+  let filtered = allRefPriceData || [];
+
+  if (custKw) {
+    filtered = filtered.filter(item => {
+      const searchTarget = (item.customerSearchText || (item.custNo + ' ' + item.custName)).toLowerCase();
+      return searchTarget.includes(custKw);
+    });
+  }
+
+  if (prodKw) {
+    filtered = filtered.filter(item => {
+      return (item.product || '').toLowerCase().includes(prodKw);
+    });
+  }
+
+  renderPriceList(filtered);
+}
+
+function clearCustFilter() {
+  document.getElementById('modalCustSearch').value = '';
+  applyModalFilter();
+  document.getElementById('modalCustSearch').focus();
+}
+
+function clearProdFilter() {
+  document.getElementById('modalProdSearch').value = '';
+  applyModalFilter();
+  document.getElementById('modalProdSearch').focus();
+}
+
+function filterCurrentCustomerOnly() {
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+  if (!cust) {
+    showToast('ยังไม่ได้เลือกลูกค้าในหน้าหลัก กรุณาพิมพ์ค้นหาในช่องค้นหาลูกค้า', 'info');
+    document.getElementById('modalCustSearch').focus();
+    return;
+  }
+  document.getElementById('modalCustSearch').value = cust.custNo || cust.name;
+  applyModalFilter();
+}
+
+function showAllRecords() {
+  document.getElementById('modalCustSearch').value = '';
+  document.getElementById('modalProdSearch').value = '';
+  applyModalFilter();
+}
+
+// วาดตารางแสดงผลลัพธ์
+function renderPriceList(items) {
+  const tbody = document.getElementById('priceListBody');
+  const count = document.getElementById('priceListCount');
+  window.currentModalItems = items || [];
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:#888;">ไม่พบรายการที่ตรงกับเงื่อนไข<br><span style="font-size:12px;color:#aaa;">(ลองล้างช่องค้นหาเพื่อดูสินค้าทั้งหมด)</span></td></tr>';
+    count.textContent = 'พบ 0 รายการ';
+    return;
+  }
+
+  const cust = selectedCustomerIdx >= 0 ? allCustomers[selectedCustomerIdx] : null;
+  const currentCustNo = cust ? (cust.custNo || '') : '';
+
+  tbody.innerHTML = items.map((p, i) => {
+    const rowCustNo = p.custNo || currentCustNo || '-';
+    const rowCustName = p.custName || '-';
+    const priceDisplay = (typeof p.price === 'number') ? '฿' + formatNum(p.price) : '฿' + p.price;
+    const qtyDisplay = (p.qty !== '' && p.qty !== null && p.qty !== undefined)
+      ? (typeof p.qty === 'number' ? formatNum(p.qty) : p.qty)
+      : '-';
+
+    return `
+    <tr style="border-bottom:1px solid #eee;${i % 2 === 1 ? 'background:#f8f9ff;' : ''}">
+      <td style="padding:7px 6px;text-align:center;color:#888;font-size:12px;">${i + 1}</td>
+      <td style="padding:7px 6px;text-align:center;color:#666;font-size:12px;">${p.date || '-'}</td>
+      <td style="padding:7px 6px;text-align:center;font-weight:600;color:#1a73e8;font-size:12px;">${rowCustNo}</td>
+      <td style="padding:7px 8px;font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;" title="${escapeStr(rowCustName)}">${rowCustName}</td>
+      <td style="padding:7px 8px;font-weight:600;color:#222;">${p.product}</td>
+      <td style="padding:7px 6px;text-align:center;color:#444;">${qtyDisplay}</td>
+      <td style="padding:7px 6px;text-align:center;color:#444;">${p.unit || 'ชิ้น'}</td>
+      <td style="padding:7px 8px;text-align:right;color:#1a73e8;font-weight:700;">${priceDisplay}</td>
+      <td style="padding:7px 8px;text-align:center;">
+        <button type="button"
+                onclick="selectModalItem(${i})"
+                style="padding:4px 10px;border:1.5px solid #1a73e8;border-radius:6px;background:#e8f0fe;color:#1a73e8;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700;transition:all 0.15s;">
+          ➕ เลือก
+        </button>
+      </td>
+    </tr>
+  `;
+  }).join('');
+
+  const selYear = document.getElementById('yearFilter') ? document.getElementById('yearFilter').value : '';
+  const yearText = (selYear && selYear !== 'all') ? ('ปี ' + selYear) : 'ทุกปี';
+  count.textContent = 'แสดง ' + items.length + ' รายการ (' + yearText + ' จากทั้งหมด ' + (allRefPriceData ? allRefPriceData.length : items.length) + ')';
+}
+
+function selectModalItem(idx) {
+  const item = window.currentModalItems[idx];
+  if (!item) return;
+  quickAddProduct(item.product, item.price, item.unit, item.qty);
+}
+
+function quickAddProduct(name, price, unit, qty) {
+  let targetIndex = currentTargetRow;
+
+  if (!targetIndex) {
+    for (let i = 1; i <= MAX_ITEMS; i++) {
+      if (!document.getElementById('prod_name_' + i).value.trim()) {
+        targetIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (!targetIndex) targetIndex = 1;
+
+  // เอาเฉพาะชื่อสินค้าล้วนๆ ไม่ใส่รหัสลูกค้า เช่น ตัด [A0002] ออกถ้ามี
+  const cleanName = (name || '').replace(/^\[[^\]]+\]\s*/, '').trim();
+
+  document.getElementById('prod_name_' + targetIndex).value  = cleanName;
+  document.getElementById('prod_price_' + targetIndex).value = price || 0;
+  if (qty) document.getElementById('prod_qty_' + targetIndex).value = qty;
+
+  const unitSel = document.getElementById('prod_unit_' + targetIndex);
+  let foundUnit = false;
+  for (let o of unitSel.options) {
+    if (o.value === unit) { o.selected = true; foundUnit = true; break; }
+  }
+  if (!foundUnit && unit) {
+    const opt = document.createElement('option');
+    opt.value = unit;
+    opt.textContent = unit;
+    opt.selected = true;
+    unitSel.appendChild(opt);
+  }
+
+  calcRow(targetIndex);
+  closePriceListModal();
+  document.getElementById('prod_qty_' + targetIndex).focus();
+  showToast('เลือก "' + cleanName + '" แถวที่ ' + targetIndex + ' เรียบร้อย', 'success');
+}
+</script>
+</body>
+</html>
