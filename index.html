@@ -480,82 +480,22 @@ footer {
 .mascot-card.capi .mascot-role-badge { background: #16A34A; }
 
 .mascot-body {
-  padding: 24px;
+  padding: 20px 24px 24px;
   display: flex;
   flex-direction: column;
-  flex: 1;
 }
 .mascot-name {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 700;
   color: var(--navy);
-  margin-bottom: 2px;
+  margin-bottom: 6px;
 }
 .mascot-subtitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 14px;
-}
-.mascot-card.foxxy .mascot-subtitle { color: #2563EB; }
-.mascot-card.hookie .mascot-subtitle { color: #EA580C; }
-.mascot-card.capi .mascot-subtitle { color: #16A34A; }
-
-.mascot-quote {
-  font-size: 0.88rem;
-  font-style: italic;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--navy);
-  background: var(--offwhite);
-  border-left: 3px solid var(--navy);
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  line-height: 1.55;
-}
-.mascot-card.foxxy .mascot-quote { border-left-color: #2563EB; }
-.mascot-card.hookie .mascot-quote { border-left-color: #EA580C; }
-.mascot-card.capi .mascot-quote { border-left-color: #16A34A; }
-
-.mascot-traits {
-  list-style: none;
-  font-size: 0.84rem;
   color: var(--mid);
-  line-height: 1.65;
-  margin-bottom: 16px;
-  flex: 1;
-}
-.mascot-traits li {
-  margin-bottom: 8px;
-}
-.mascot-traits strong {
-  color: var(--charcoal);
-}
-.mascot-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-.mascot-signature-bar {
-  margin-top: 32px;
-  background: var(--navy);
-  color: var(--white);
-  padding: 20px 28px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  border-left: 4px solid var(--amber);
-}
-.sig-item {
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-.sig-item strong {
-  display: block;
-  font-size: 0.92rem;
-  color: var(--amber);
-  margin-bottom: 2px;
+  line-height: 1.6;
 }
 
 /* ─── RESPONSIVE ─── */
@@ -854,89 +794,35 @@ footer {
       <!-- 1. Foxxy -->
       <article class="mascot-card foxxy">
         <div class="mascot-img-wrap">
-          <img src="images/foxxy.jpg" alt="ฟ็อกซี่ (Foxxy) — จิ้งจอกนักขาย MC Rubber">
-          <span class="mascot-role-badge">PRODUCT · สีน้ำเงิน</span>
+          <img src="images/foxxy.jpg" alt="ฟ็อกซี่ (Foxxy)">
         </div>
         <div class="mascot-body">
           <div class="mascot-name">ฟ็อกซี่ (Foxxy)</div>
           <div class="mascot-subtitle">จิ้งจอกนักขาย — แนะนำสินค้า ราคา และช่วยเลือกสินค้าให้ตรงกับงาน</div>
-          <div class="mascot-quote">“กำลังหายางแบบไหนอยู่ครับ เดี๋ยวฟ็อกซี่ช่วยเลือกให้!”</div>
-          <ul class="mascot-traits">
-            <li><strong>บุคลิก:</strong> ฉลาด มีไหวพริบ คล่องแคล่ว พูดเก่ง เข้าถึงง่าย สื่อสารตรงประเด็น ไม่ซับซ้อน</li>
-            <li><strong>เอกลักษณ์:</strong> เสื้อโปโล MC Rubber สีน้ำเงินพร้อมป้ายชื่อ ถือสินค้าจริง ป้ายราคา และ Spec Sheet หน้าชั้นวางสินค้า</li>
-            <li><strong>หน้าที่หลัก:</strong> แนะนำ SKU ใหม่ โปรโมชั่น เปรียบเทียบราคาและสเปก เพื่อช่วยให้ตัดสินใจซื้อได้ง่ายขึ้น</li>
-          </ul>
-          <div class="mascot-tags">
-            <span class="mat-tag">แนะนำสินค้า</span>
-            <span class="mat-tag">เช็กราคา &amp; สเปก</span>
-            <span class="mat-tag">โปรโมชั่น / Bundle</span>
-            <span class="mat-tag">ทักถามราคาได้เลยครับ</span>
-          </div>
         </div>
       </article>
 
       <!-- 2. Hookie -->
       <article class="mascot-card hookie">
         <div class="mascot-img-wrap">
-          <img src="images/hookie.jpg" alt="ฮูกกี้ (Hookie) — นกฮูกผู้รู้เรื่องยาง MC Rubber">
-          <span class="mascot-role-badge">KNOWLEDGE · สีส้ม</span>
+          <img src="images/hookie.jpg" alt="ฮูกกี้ (Hookie)">
         </div>
         <div class="mascot-body">
           <div class="mascot-name">ฮูกกี้ (Hookie)</div>
           <div class="mascot-subtitle">นกฮูกผู้รู้เรื่องยาง — อธิบายความรู้ทางเทคนิคและช่วยเลือกใช้วัสดุได้ถูกต้อง</div>
-          <div class="mascot-quote">“ก่อนเลือกใช้ยาง เรามาดูคุณสมบัติให้ถูกต้องกันก่อนครับ!”</div>
-          <ul class="mascot-traits">
-            <li><strong>บุคลิก:</strong> รอบรู้ ช่างสังเกต ใจเย็น อธิบายเหตุผลอย่างเป็นระบบ น่าเชื่อถือ เน้นข้อเท็จจริง</li>
-            <li><strong>เอกลักษณ์:</strong> เสื้อช่าง Safety Vest สีส้ม สวมแว่นนิรภัย พร้อมท่อยาง ตัวอย่างวัสดุ เครื่องมือวัด และแผ่นสเปกบนโต๊ะช่าง</li>
-            <li><strong>หน้าที่หลัก:</strong> How-to วิธีเลือก/ติดตั้ง อธิบายมาตรฐาน เปรียบเทียบวัสดุ และตอบ FAQ ที่ลูกค้าถามบ่อย</li>
-          </ul>
-          <div class="mascot-tags">
-            <span class="mat-tag">How-to &amp; วิธีเลือก</span>
-            <span class="mat-tag">เปรียบเทียบวัสดุ</span>
-            <span class="mat-tag">มาตรฐานสเปก</span>
-            <span class="mat-tag">ถ้าไม่แน่ใจ ทักมาถามได้เลยครับ</span>
-          </div>
         </div>
       </article>
 
       <!-- 3. Capi -->
       <article class="mascot-card capi">
         <div class="mascot-img-wrap">
-          <img src="images/capi.jpg" alt="คาปิ (Capi) — คาปิบาราผู้สร้างมิตรภาพ MC Rubber">
-          <span class="mascot-role-badge">PR &amp; STORY · สีเขียว</span>
+          <img src="images/capi.jpg" alt="คาปิ (Capi)">
         </div>
         <div class="mascot-body">
           <div class="mascot-name">คาปิ (Capi)</div>
           <div class="mascot-subtitle">คาปิบาราผู้สร้างมิตรภาพ — เล่าเรื่อง MC Rubber ให้แบรนด์อบอุ่นและเข้าถึงง่าย</div>
-          <div class="mascot-quote">“มาครับ วันนี้คาปิจะพาไปรู้จัก MC Rubber ให้มากขึ้น!”</div>
-          <ul class="mascot-traits">
-            <li><strong>บุคลิก:</strong> ใจเย็น เป็นมิตร อบอุ่น จริงใจ ชอบเล่าเรื่องและพาผู้ชมไปรู้จักคนในทีมเบื้องหลัง</li>
-            <li><strong>เอกลักษณ์:</strong> เสื้อโปโลสีครีมขอบเขียวพร้อมโลโก้ MC Rubber โบกมือทักทายด้วยรอยยิ้มที่หน้าร้านและพื้นที่ทำงาน</li>
-            <li><strong>หน้าที่หลัก:</strong> พาชม Behind the Scene ลูกค้า Success Story แนะนำทีมงาน และเรื่องราวการให้บริการจริง</li>
-          </ul>
-          <div class="mascot-tags">
-            <span class="mat-tag">Behind the Scene</span>
-            <span class="mat-tag">Success Story</span>
-            <span class="mat-tag">แนะนำทีมงาน</span>
-            <span class="mat-tag">ติดตามเราได้ที่ MC Rubber ครับ</span>
-          </div>
         </div>
       </article>
-    </div>
-
-    <div class="mascot-signature-bar">
-      <div class="sig-item">
-        <strong>🦊 จิ้งจอก + น้ำเงิน + ถือสินค้า</strong>
-        แนะนำสินค้า — ช่วยให้ลูกค้าเห็นตัวเลือกและตัดสินใจซื้อได้ง่ายขึ้น
-      </div>
-      <div class="sig-item">
-        <strong>🦉 นกฮูก + ส้ม + สาธิตของจริง</strong>
-        ให้ความรู้ — สร้างความเข้าใจทางเทคนิคและเลือกใช้วัสดุได้ถูกต้อง
-      </div>
-      <div class="sig-item">
-        <strong>🐹 คาปิบารา + เขียว + เล่าเรื่อง</strong>
-        สร้างแบรนด์ — สร้างความคุ้นเคยและความผูกพันกับทีมงาน MC Rubber
-      </div>
     </div>
   </div>
 </section>
