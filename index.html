@@ -555,6 +555,87 @@ footer {
 .product-item:hover .product-img-wrap img {
   transform: scale(1.05);
 }
+
+/* ─── QUOTATION FORM ─── */
+.quote-section { background: var(--offwhite); border-top: 1px solid var(--line); }
+.quote-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start;
+}
+.quote-info h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.8rem; font-weight: 700; color: var(--navy); margin-bottom: 12px;
+}
+.quote-info p { font-size: 0.9rem; color: var(--mid); line-height: 1.7; margin-bottom: 24px; }
+.quote-promise {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.quote-promise-item {
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.promise-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: rgba(37,99,235,0.08);
+  display: flex; align-items: center; justify-content: center;
+}
+.promise-icon svg { width: 16px; height: 16px; }
+.promise-text strong { display: block; font-size: 0.875rem; color: var(--navy); font-weight: 600; }
+.promise-text span { font-size: 0.8rem; color: var(--mid); }
+
+.quote-form {
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 36px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block; font-size: 0.8rem; font-weight: 600;
+  color: var(--navy); letter-spacing: 0.05em; margin-bottom: 6px;
+}
+.form-group label span { color: #E53E3E; margin-left: 2px; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--line); background: var(--offwhite);
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 0.875rem; color: var(--charcoal);
+  outline: none; transition: border-color 0.2s;
+  border-radius: 0;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--blue); background: var(--white); }
+.form-group textarea { resize: vertical; min-height: 90px; }
+.form-group select { appearance: none; cursor: pointer; }
+.btn-submit {
+  width: 100%; padding: 14px;
+  background: var(--blue); color: var(--white);
+  border: none; cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.95rem; font-weight: 600; letter-spacing: 0.03em;
+  transition: background 0.2s;
+}
+.btn-submit:hover { background: var(--blue-dark); }
+.btn-submit:disabled { background: var(--mid); cursor: not-allowed; }
+.form-notice { font-size: 0.75rem; color: var(--mid); margin-top: 10px; text-align: center; }
+.form-success {
+  display: none; text-align: center; padding: 24px;
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3);
+  margin-top: 16px;
+}
+.form-success.show { display: block; }
+.form-success p { color: #065F46; font-weight: 600; font-size: 0.95rem; }
+.form-error {
+  display: none; text-align: center; padding: 12px;
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3);
+  margin-top: 12px; font-size: 0.85rem; color: #991B1B;
+}
+.form-error.show { display: block; }
+@media (max-width: 768px) {
+  .quote-grid { grid-template-columns: 1fr; gap: 32px; }
+  .form-row { grid-template-columns: 1fr; }
+  .quote-form { padding: 24px; }
+}
 </style>
 </head>
 <body>
@@ -570,7 +651,7 @@ footer {
       <li><a href="#mascots">ทีมมาสคอต</a></li>
       <li><a href="#contact">ติดต่อ</a></li>
     </ul>
-    <a href="#contact" class="nav-cta">ขอใบเสนอราคา</a>
+    <a href="#quotation" class="nav-cta">ขอใบเสนอราคา</a>
   </div>
 </nav>
 
@@ -903,6 +984,129 @@ footer {
   </div>
 </section>
 
+<!-- QUOTATION FORM -->
+<section class="section quote-section" id="quotation">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-kicker">QUOTATION REQUEST</div>
+      <h2 class="section-title">ขอใบเสนอราคา</h2>
+      <p class="section-desc">กรอกข้อมูลด้านล่าง ทีมงานจะจัดส่งใบเสนอราคาให้ภายใน 24 ชั่วโมง</p>
+    </div>
+
+    <div class="quote-grid">
+      <!-- Left: Info -->
+      <div class="quote-info">
+        <h3>ทำไมต้องขอใบเสนอราคาจาก MC Rubber?</h3>
+        <p>เราเข้าใจว่าแต่ละงานมีความต้องการที่แตกต่างกัน ทีมงานของเราพร้อมช่วยเลือก compound วัสดุ และขนาดที่เหมาะสมที่สุด</p>
+        <div class="quote-promise">
+          <div class="quote-promise-item">
+            <div class="promise-icon">
+              <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div class="promise-text">
+              <strong>ราคาโรงงาน ไม่ผ่านคนกลาง</strong>
+              <span>ราคาส่งสำหรับทุกออเดอร์ ไม่มีขั้นต่ำ</span>
+            </div>
+          </div>
+          <div class="quote-promise-item">
+            <div class="promise-icon">
+              <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <div class="promise-text">
+              <strong>ตอบกลับภายใน 24 ชั่วโมง</strong>
+              <span>ทุกวันทำการ จันทร์–เสาร์</span>
+            </div>
+          </div>
+          <div class="quote-promise-item">
+            <div class="promise-icon">
+              <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="promise-text">
+              <strong>ใบเสนอราคาอย่างเป็นทางการ</strong>
+              <span>พร้อม spec สินค้าและเงื่อนไขการชำระเงิน</span>
+            </div>
+          </div>
+          <div class="quote-promise-item">
+            <div class="promise-icon">
+              <svg fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+            </div>
+            <div class="promise-text">
+              <strong>ตัดขนาดตามสั่ง</strong>
+              <span>บริการ custom cut สำหรับทุกขนาด</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Form -->
+      <div class="quote-form">
+        <form id="quotationForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label>ชื่อ-นามสกุล <span>*</span></label>
+              <input type="text" id="q_name" placeholder="ชื่อผู้ติดต่อ" required>
+            </div>
+            <div class="form-group">
+              <label>เบอร์โทรศัพท์ <span>*</span></label>
+              <input type="tel" id="q_phone" placeholder="08X-XXX-XXXX" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>อีเมล <span>*</span></label>
+            <input type="email" id="q_email" placeholder="example@company.com" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ประเภทสินค้า <span>*</span></label>
+              <select id="q_product" required>
+                <option value="">— เลือกสินค้า —</option>
+                <option>โอริง (O-Ring)</option>
+                <option>ท่อยาง (Rubber Hose)</option>
+                <option>แผ่นยาง (Rubber Sheet)</option>
+                <option>ยางซีลประตู (Door Seal)</option>
+                <option>ข้อต่อลม (Pneumatic Fitting)</option>
+                <option>สายพานลำเลียง (Conveyor Belt)</option>
+                <option>อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ปริมาณ / จำนวน <span>*</span></label>
+              <input type="text" id="q_quantity" placeholder="เช่น 100 ชิ้น / 10 เมตร" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Spec / รายละเอียดเพิ่มเติม</label>
+            <textarea id="q_note" placeholder="วัสดุ (NBR/EPDM/Silicone), ขนาด, มาตรฐาน หรือรายละเอียดงาน"></textarea>
+          </div>
+          <button type="submit" class="btn-submit" id="submitBtn">
+            ส่งคำขอใบเสนอราคา →
+          </button>
+          <p class="form-notice">ข้อมูลของคุณจะถูกใช้เพื่อจัดทำใบเสนอราคาเท่านั้น</p>
+        </form>
+        <div class="form-success" id="formSuccess">
+          <p>✅ ส่งคำขอเรียบร้อยแล้ว!</p>
+          <p style="font-weight:400; font-size:0.85rem; color:#047857; margin-top:6px;">ทีมงาน MC Rubber จะติดต่อกลับภายใน 24 ชั่วโมง</p>
+        </div>
+        <div class="form-error" id="formError">
+          ❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง หรือติดต่อผ่าน LINE
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="cta-strip" id="contact">
   <div class="cta-inner">
@@ -1073,6 +1277,52 @@ footer {
     </div>
   </div>
 </footer>
+
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+(function(){
+  emailjs.init({ publicKey: '10JERvS2nR6zsP9Lr' });
+})();
+
+document.getElementById('quotationForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  var btn = document.getElementById('submitBtn');
+  var successBox = document.getElementById('formSuccess');
+  var errorBox   = document.getElementById('formError');
+
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่ง...';
+  successBox.classList.remove('show');
+  errorBox.classList.remove('show');
+
+  var orderId = 'QT-' + Date.now().toString().slice(-6);
+
+  var params = {
+    order_id : orderId,
+    name     : document.getElementById('q_name').value,
+    phone    : document.getElementById('q_phone').value,
+    email    : document.getElementById('q_email').value,
+    product  : document.getElementById('q_product').value,
+    quantity : document.getElementById('q_quantity').value,
+    note     : document.getElementById('q_note').value || '-'
+  };
+
+  emailjs.send('service_e3bbql9', 'template_MC_Quatation', params)
+    .then(function() {
+      successBox.classList.add('show');
+      document.getElementById('quotationForm').reset();
+      btn.disabled = false;
+      btn.textContent = 'ส่งคำขอใบเสนอราคา →';
+    }, function(err) {
+      console.error('EmailJS error:', err);
+      errorBox.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'ส่งคำขอใบเสนอราคา →';
+    });
+});
+</script>
 
 </body>
 </html>
