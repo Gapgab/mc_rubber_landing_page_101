@@ -106,7 +106,7 @@ nav {
   font-size: 0.8rem; font-weight: 500;
   color: var(--amber); letter-spacing: 0.12em;
   border: 1px solid rgba(200,169,81,0.4);
-  padding: 5px 12px; margin-bottom: 24px;
+  padding: 5px 12px; margin-bottom: 16px;
 }
 .hero h1 {
   font-family: 'Barlow Condensed', sans-serif;
@@ -516,6 +516,28 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ─── SLOGAN ─── */
+.hero-slogan {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 10px;
+}
+.hero-slogan::before,
+.hero-slogan::after {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 2px;
+  background: rgba(200,169,81,0.5);
+}
 </style>
 </head>
 <body>
@@ -540,6 +562,7 @@ footer {
   <div class="hero-inner">
     <div class="hero-content">
       <div class="hero-tag">ยางอุตสาหกรรมครบวงจร · ONE STOP RUBBER SOLUTION</div>
+      <p class="hero-slogan">ครบ จบ เรื่องยาง ที่ M C Rubber</p>
       <h1>
         ยางที่ใช่<br>
         <em>สำหรับงานที่หนัก</em>
